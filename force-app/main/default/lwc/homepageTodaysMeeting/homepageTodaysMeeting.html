@@ -1,0 +1,19 @@
+<template><h3 data-heading tabindex="-1">{heading}</h3>
+<p class="scope">Only owned Renewal / Growth Opportunity meetings that have not ended.</p>
+<p role="status" class="slds-assistive-text">{announcement}</p>
+<template lwc:if={setupMessage}><p class="notice">{setupMessage}</p></template>
+<template lwc:if={errorMessage}><p role="alert" class="notice">{errorMessage}</p><lightning-button label="Retry" onclick={refreshMeetings}></lightning-button></template>
+<template lwc:if={loading}><div class="loading" role="status">Loading meetings…</div></template><template for:each={visibleMeetings} for:item="meeting">
+    <article class="meeting" key={meeting.id}>
+        <div class="time"><strong>{meeting.timeLabel}</strong><span>{meeting.timing}</span></div>
+        <a class="subject" href={meeting.eventUrl} data-event-id={meeting.id} onclick={handleRecord}>{meeting.subject}</a>
+        <template lwc:if={meeting.rescheduling}><span class="subtle">Rescheduling</span></template>
+        <a href={meeting.opportunityUrl} data-event-id={meeting.id} data-kind="opportunity" onclick={handleRecord}>{meeting.opportunity}</a>
+        <p><span class="muted">Category: </span>{meeting.category}</p>
+        <p><span class="muted">Topic: </span>{meeting.topic}</p>
+        <p><span class="muted">Primary related person: </span>{meeting.person}</p>
+        <p class="muted">Full attendee list unavailable · Open the event for attendees.</p>
+        <template lwc:if={meeting.impactUrl}><a class="impact" href={meeting.impactUrl} target="_blank" rel="noopener noreferrer" data-event-id={meeting.id} onclick={handleImpact}>Open Impact Assessment <span class="slds-assistive-text">(opens in a new tab)</span>↗</a></template>
+        <template lwc:else><button class="impact" disabled>Open Impact Assessment</button><span class="muted">Setup pending</span></template>
+    </article>
+</template><template lwc:if={isEmpty}><p>{emptyText}</p></template><p class="muted">{statusText}</p><div class="footer"><lightning-button label="View all today" onclick={handleViewAll}></lightning-button><template lwc:if={hasMore}><lightning-button label="Continue loading" disabled={loading} onclick={loadMore}></lightning-button></template><lightning-button label="Open calendar" onclick={handleExpand}></lightning-button></div></template>

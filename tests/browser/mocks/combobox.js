@@ -1,0 +1,1 @@
+import {LightningElement,api} from 'lwc'; export default class Control extends LightningElement {@api label; @api value; @api options=[]; change(event){event.stopPropagation();this.value=event.target.value;this.dispatchEvent(new CustomEvent("change",{detail:{value:this.value}}));}}

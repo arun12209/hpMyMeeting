@@ -1,0 +1,1 @@
+{"name":"gartner-my-meetings","version":"1.0.0","private":true,"scripts":{"test":"sfdx-lwc-jest -- --runInBand","compile":"node scripts/compile.cjs","check":"npm run compile && npm test"},"devDependencies":{"@lwc/compiler":"8.28.2","@salesforce/sfdx-lwc-jest":"7.9.0","graphql":"16.11.0","luxon":"3.7.2"}}

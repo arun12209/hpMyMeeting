@@ -1,0 +1,1 @@
+import {LightningElement,api} from 'lwc'; export default class Control extends LightningElement {@api iconName; @api alternativeText; get symbol(){return this.iconName?.includes("left")?"‹":this.iconName?.includes("right")?"›":"↻";}}

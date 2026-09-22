@@ -1,0 +1,59 @@
+<template>
+<lightning-modal-header label="My Meetings"></lightning-modal-header>
+<lightning-modal-body>
+    <div class="modal-content">
+    <div class="toolbar">
+        <lightning-tabset active-tab-value={activeTab}>
+            <lightning-tab label="Today" value="today" onactive={handleTab}></lightning-tab>
+            <lightning-tab label="Tomorrow" value="tomorrow" onactive={handleTab}></lightning-tab>
+            <lightning-tab label="Calendar" value="calendar" onactive={handleTab}></lightning-tab>
+            <template lwc:if={showSelected}><lightning-tab label="Selected date" value="selected" onactive={handleTab}></lightning-tab></template>
+        </lightning-tabset>
+        <template lwc:if={dashboardUrl}><a href={dashboardUrl} target="_blank" rel="noopener noreferrer">Manage Meetings ↗ <span class="slds-assistive-text">(opens in a new tab)</span></a></template>
+        <template lwc:else><span class="muted">Manage Meetings · Dashboard link not configured</span></template>
+        <lightning-button-icon icon-name="utility:refresh" alternative-text="Refresh meetings" onclick={refreshMeetings}></lightning-button-icon>
+    </div>
+    <template lwc:if={showCalendar}>
+        <c-homepage-calendar-meetings display-mode="expanded" selected-date={selectedKey} scope-config={scopeConfig} display-zone={displayZone} integration-config={integrationConfig} ondatechange={handleCalendarDate} onviewall={handleCalendarList} onrequestnavigation={handleCalendarNavigation}></c-homepage-calendar-meetings>
+    </template>
+    <template lwc:else><h3 data-heading tabindex="-1">{heading}</h3>
+<p class="scope">Only owned Renewal / Growth Opportunity meetings that have not ended.</p>
+<p role="status" class="slds-assistive-text">{announcement}</p>
+<template lwc:if={setupMessage}><p class="notice">{setupMessage}</p></template>
+<template lwc:if={errorMessage}><p role="alert" class="notice">{errorMessage}</p><lightning-button label="Retry" onclick={refreshMeetings}></lightning-button></template>
+<template lwc:if={loading}><div class="loading" role="status">Loading meetings…</div></template>
+    <lightning-input type="search" label={searchLabel} value={searchTerm} onchange={handleSearch}></lightning-input>
+    <template lwc:if={showTable}><div class="desktop-list"><table class="slds-table slds-table_cell-buffer slds-table_bordered">
+        <caption class="slds-assistive-text">Upcoming and ongoing meetings for the selected date</caption>
+        <thead><tr><th scope="col"><button class="sort" disabled={sortDisabled} onclick={sortTime} title={sortLabel}>Start time ↕</button></th><th scope="col">Subject</th><th scope="col">Attendees</th><th scope="col">Related to</th><th scope="col">Category / topic</th><th scope="col">Action</th></tr></thead>
+        <tbody><template for:each={visibleMeetings} for:item="meeting"><tr key={meeting.id}>
+            <td><span>{meeting.timeLabel}</span><span class="muted">{meeting.timing}</span></td>
+            <th scope="row"><a href={meeting.eventUrl} data-event-id={meeting.id} onclick={handleRecord}>{meeting.subject}</a><template lwc:if={meeting.rescheduling}><p class="subtle">Rescheduling</p></template></th>
+            <td>Primary related person: {meeting.person}<p class="muted">Full attendee list unavailable</p></td>
+            <td><a href={meeting.opportunityUrl} data-event-id={meeting.id} data-kind="opportunity" onclick={handleRecord}>{meeting.opportunity}</a></td>
+            <td><p>Category: {meeting.category}</p><p>Topic: {meeting.topic}</p></td>
+            <td><template lwc:if={meeting.impactUrl}><a class="impact" href={meeting.impactUrl} data-event-id={meeting.id} target="_blank" rel="noopener noreferrer" onclick={handleImpact}>Open Impact Assessment ↗<span class="slds-assistive-text">(opens in a new tab)</span></a></template><template lwc:else><button class="impact" disabled>Open Impact Assessment</button><span class="muted">Setup pending</span></template></td>
+        </tr></template></tbody>
+    </table></div></template>
+    <template lwc:else><div class="mobile-list"><template for:each={visibleMeetings} for:item="meeting">
+    <article class="meeting" key={meeting.id}>
+        <div class="time"><strong>{meeting.timeLabel}</strong><span>{meeting.timing}</span></div>
+        <a class="subject" href={meeting.eventUrl} data-event-id={meeting.id} onclick={handleRecord}>{meeting.subject}</a>
+        <template lwc:if={meeting.rescheduling}><span class="subtle">Rescheduling</span></template>
+        <a href={meeting.opportunityUrl} data-event-id={meeting.id} data-kind="opportunity" onclick={handleRecord}>{meeting.opportunity}</a>
+        <p><span class="muted">Category: </span>{meeting.category}</p>
+        <p><span class="muted">Topic: </span>{meeting.topic}</p>
+        <p><span class="muted">Primary related person: </span>{meeting.person}</p>
+        <p class="muted">Full attendee list unavailable · Open the event for attendees.</p>
+        <template lwc:if={meeting.impactUrl}><a class="impact" href={meeting.impactUrl} target="_blank" rel="noopener noreferrer" data-event-id={meeting.id} onclick={handleImpact}>Open Impact Assessment <span class="slds-assistive-text">(opens in a new tab)</span>↗</a></template>
+        <template lwc:else><button class="impact" disabled>Open Impact Assessment</button><span class="muted">Setup pending</span></template>
+    </article>
+</template></div></template>
+    <template lwc:if={isEmpty}><p>No upcoming or ongoing Opportunity meetings match this day and search.</p></template>
+    <p class="muted">{statusText}</p>
+    <template lwc:if={hasMore}><lightning-button label="Load more meetings" disabled={loading} onclick={loadMore}></lightning-button></template>
+    </template>
+    </div>
+</lightning-modal-body>
+<lightning-modal-footer><lightning-button label="Close" onclick={closeModal}></lightning-button></lightning-modal-footer>
+</template>

@@ -1,0 +1,1 @@
+import {LightningElement,api} from 'lwc'; export default class Control extends LightningElement {}

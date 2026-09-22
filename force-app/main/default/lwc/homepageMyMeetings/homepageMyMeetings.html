@@ -1,0 +1,25 @@
+<template>
+    <section class="surface" aria-label="My Meetings">
+        <header>
+            <h2 data-heading tabindex="-1">My Meetings</h2>
+            <div class="management">
+                <template lwc:if={dashboardUrl}><a href={dashboardUrl} target="_blank" rel="noopener noreferrer">Manage Meetings <span class="slds-assistive-text">(opens in a new tab)</span>↗</a></template>
+                <template lwc:else><button disabled>Manage Meetings</button><small>Dashboard link not configured</small></template>
+            </div>
+            <lightning-button-icon icon-name="utility:refresh" alternative-text="Refresh meetings" onclick={refreshMeetings}></lightning-button-icon>
+        </header>
+        <template lwc:if={setupError}><p role="status">{setupError}</p></template>
+        <template lwc:if={modalError}><p role="alert">{modalError}</p></template>
+        <lightning-tabset active-tab-value={activeTab}>
+            <lightning-tab label={todayLabel} value="today" onactive={handleTab}>
+                <template lwc:if={showToday}><c-homepage-todays-meeting scope-config={scopeConfig} display-zone={displayZone} max-visible-meetings={maxVisibleMeetings} integration-config={integrationConfig} onsummarychange={handleSummary} onviewall={expand} onexpand={expand} onrequestnavigation={navigate}></c-homepage-todays-meeting></template>
+            </lightning-tab>
+            <lightning-tab label={tomorrowLabel} value="tomorrow" onactive={handleTab}>
+                <template lwc:if={showTomorrow}><c-homepage-tomorrow-meetings scope-config={scopeConfig} display-zone={displayZone} max-visible-meetings={maxVisibleMeetings} integration-config={integrationConfig} onsummarychange={handleSummary} onviewall={expand} onexpand={expand} onrequestnavigation={navigate}></c-homepage-tomorrow-meetings></template>
+            </lightning-tab>
+            <lightning-tab label="Calendar" value="calendar" onactive={handleTab}>
+                <template lwc:if={showCalendar}><c-homepage-calendar-meetings scope-config={scopeConfig} display-zone={displayZone} selected-date={selectedDate} max-visible-meetings="1" integration-config={integrationConfig} ondatechange={handleDate} onviewall={expand} onexpand={expand} onrequestnavigation={navigate}></c-homepage-calendar-meetings></template>
+            </lightning-tab>
+        </lightning-tabset>
+    </section>
+</template>

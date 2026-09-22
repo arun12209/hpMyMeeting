@@ -1,0 +1,43 @@
+const fs=require('fs'),path=require('path');const {rollup}=require('rollup');const {transformSync}=require('@lwc/compiler');
+const root=process.cwd(),lwc=path.join(root,'force-app/main/default/lwc'),mocks=path.join(root,'tests/browser/mocks');
+const controls={
+ button:['@api label; @api disabled;','<button disabled={disabled}>{label}</button>'],
+ buttonIcon:['@api iconName; @api alternativeText; get symbol(){return this.iconName?.includes("left")?"‹":this.iconName?.includes("right")?"›":"↻";}','<button aria-label={alternativeText}>{symbol}</button>'],
+ input:['@api label; @api value; @api type; change(event){event.stopPropagation();this.value=event.target.value;this.dispatchEvent(new CustomEvent("change",{detail:{value:this.value}}));}','<label>{label}<input type={type} value={value} oninput={change}/></label>'],
+ combobox:['@api label; @api value; @api options=[]; change(event){event.stopPropagation();this.value=event.target.value;this.dispatchEvent(new CustomEvent("change",{detail:{value:this.value}}));}','<label>{label}<select value={value} onchange={change}><template for:each={options} for:item="option"><option key={option.value} value={option.value}>{option.label}</option></template></select></label>'],
+ tab:['@api label; @api value; active(){this.dispatchEvent(new CustomEvent("active"));}','<button onclick={active}>{label}</button><slot></slot>'],
+ tabset:['@api activeTabValue;','<slot></slot>'],
+ modalHeader:['@api label;','<h2>{label}</h2>'],modalBody:['','<slot></slot>'],modalFooter:['','<slot></slot>']
+};
+for(const [name,[js,html]]of Object.entries(controls)){
+ fs.writeFileSync(path.join(mocks,name+'.js'),`import {LightningElement,api} from 'lwc'; export default class Control extends LightningElement {${js}}`);
+ fs.writeFileSync(path.join(mocks,name+'.html'),`<template>${html}</template>`);
+ fs.writeFileSync(path.join(mocks,name+'.css'),':host{display:block}button,input,select{font:inherit;min-height:44px;border:1px solid #b7c6d7;border-radius:5px;background:white;color:#0b5cab;padding:8px;max-width:100%}label{display:flex;flex-direction:column;gap:4px;color:#526171;font-size:14px}h2{font-size:24px}');
+}
+fs.writeFileSync(path.join(mocks,'modal.js'),"import {LightningElement,api} from 'lwc'; export default class Modal extends LightningElement {static async open(){return undefined;} @api close(){}} ");
+(async()=>{
+const bundle=await rollup({input:path.join(root,'tests/browser/entry.js'),plugins:[{
+ name:'local-lwc-preview',
+ resolveId(id,importer){
+  if(id==='lwc')return require.resolve('@lwc/engine-dom/dist/index.js');
+  if(id.startsWith('c/')){const name=id.slice(2);return path.join(lwc,name,name+'.js');}
+  if(id.startsWith('lightning/'))return path.join(mocks,id.slice(10)+'.js');
+  if(id.startsWith('@salesforce/'))return '\0'+id;
+  if(id.startsWith('.')){let p=path.resolve(path.dirname(importer),id);if(!path.extname(p))p+='.js';return p;}
+ },
+ load(id){
+  if(id.startsWith('\0@salesforce/'))return `export default ${JSON.stringify(id.includes('user/Id')?'005000000000001AAA':id.includes('locale')?'en-US':'UTC')};`;
+  if(id.includes('.scoped.css')&&!fs.existsSync(id))return 'export default undefined;';
+  if((id.endsWith('.html')||id.endsWith('.css'))&&!fs.existsSync(id))return 'export default undefined;';
+ },
+ transform(source,id){
+  if(!fs.existsSync(id))return null;
+  if(id.includes('@lwc/engine-dom'))return source.replaceAll('process.env.NODE_ENV',"'production'");
+  if(id.startsWith(lwc)||id.startsWith(mocks)&&!id.endsWith('graphql.js')){
+   const name=path.basename(id).split('.')[0];return transformSync(source,id,{name,namespace:id.startsWith(lwc)?'c':'lightning',apiVersion:65}).code;
+  }
+ }
+}]});
+fs.mkdirSync(path.join(root,'tests/browser/dist'),{recursive:true});await bundle.write({file:path.join(root,'tests/browser/dist/app.js'),format:'iife'});
+fs.writeFileSync(path.join(root,'tests/browser/dist/index.html'),`<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>My Meetings local QA</title><style>body{font:16px Arial,sans-serif;margin:0;padding:12px;background:#f4f6f9}p{margin:0}#mount{background:white;border:1px solid #d8dde6;border-radius:8px;padding:12px;max-width:1200px;margin:auto}aside{font-size:12px;color:#526171;margin:0 0 12px}.slds-assistive-text{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}</style><aside>LOCAL FIXTURES · Actual compiled LWC templates · Platform controls mocked · No Salesforce connection</aside><main id="mount"></main><script src="app.js"></script></html>`);
+})();
