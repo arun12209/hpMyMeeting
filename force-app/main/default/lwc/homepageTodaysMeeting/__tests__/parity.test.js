@@ -63,7 +63,7 @@ describe.each(consumers)('%s wire and lifecycle',(name,module)=>{
  it('treats initial undefined as loading and GraphQL errors as failure, not empty',async()=>{
   const el=await mount();graphql.emit({});await flush();expect(el.shadowRoot.textContent).toContain('Loading');
   graphql.emit({data:response(nodesFor(1)).data,errors:[{message:'Denied'}]});await flush();
-  expect(el.shadowRoot.querySelectorAll('article')).toHaveLength(0);expect(el.shadowRoot.textContent).toContain('Could not load');expect(el.shadowRoot.textContent).not.toContain('0 meetings · All loaded');
+  expect(el.shadowRoot.querySelectorAll('article')).toHaveLength(0);expect(el.shadowRoot.textContent).toContain('Meetings couldn’t load');expect(el.shadowRoot.textContent).not.toContain('0 meetings · All loaded');
  });
  it('rejects delayed expired records and cached emissions after expiry without changing cutoff',async()=>{
   const el=await mount();const asOf=graphql.getLastConfig().variables.asOf;
@@ -89,5 +89,41 @@ describe.each(consumers)('%s wire and lifecycle',(name,module)=>{
   const el=await mount();const navigation=jest.fn();el.addEventListener('requestnavigation',navigation);el.addEventListener('modalclose',navigation);
   graphql.emit(response(nodesFor(1)));await flush();const link=el.shadowRoot.querySelector('a[data-event-id]');
   jest.setSystemTime(new Date(name==='tomorrow'?'2026-09-23T12:00:00Z':'2026-09-22T12:00:00Z'));link.click();await flush();expect(navigation).not.toHaveBeenCalled();
+ });
+});
+it.each(consumers)('%s distinguishes repeated-hour offsets',(_name,module)=>{
+ const one=module.formatTime(Date.parse('2026-11-01T05:30:00Z'),'America/New_York','en-US');
+ const two=module.formatTime(Date.parse('2026-11-01T06:30:00Z'),'America/New_York','en-US');
+ expect(one).toContain('GMT-4');expect(two).toContain('GMT-5');
+});
+describe.each(consumers)('%s reported deployment regressions',(name,module)=>{
+ it('retains the actual INVALID_FIELD message without Retry, false empty or incomplete footer',async()=>{
+  const el=createElement('c-error-test',{is:module.default});el.scopeConfig=scope;el.displayZone='America/Chicago';document.body.appendChild(el);await flush();
+  const message="INVALID_FIELD: No such column 'RecordTypeId' on entity 'Name'.";
+  graphql.emit({errors:[{message,extensions:{errorCode:'INVALID_FIELD'}}]});await flush();
+  expect(el.shadowRoot.querySelector('.error-details pre').textContent).toContain(message);
+  window.dispatchEvent(new Event('focus'));await flush();
+  expect(el.shadowRoot.querySelector('.error-details pre').textContent).toContain(message);
+  expect(el.shadowRoot.querySelector('.loading-state')).toBeNull();
+  expect([...el.shadowRoot.querySelectorAll('button')].some(b=>b.textContent==='Retry')).toBe(false);
+  expect(el.shadowRoot.textContent).not.toContain('Results incomplete');expect(el.shadowRoot.textContent).not.toContain('configured timezone');
+ });
+ it('merges starting, continuing and all-day connections even when their cursors match',async()=>{
+  const el=createElement('c-lane-test',{is:module.default});el.scopeConfig=scope;el.displayZone='UTC';if(name==='modal')el.initialDate='2026-09-22';document.body.appendChild(el);await flush();
+  const day=name==='tomorrow'?'2026-09-23':'2026-09-22';
+  const start=graphql.getLastConfig().variables.rangeStart;
+  graphql.emit(response([meeting(1,{StartDateTime:v(`${day}T11:00:00Z`),EndDateTime:v(`${day}T12:00:00Z`)})]));await flush();
+  graphql.emit(response([meeting(2,{StartDateTime:v(new Date(Date.parse(start)-3600000).toISOString()),EndDateTime:v(`${day}T12:00:00Z`)})]));await flush();
+  graphql.emit(response([meeting(3,{IsAllDayEvent:v(true),StartDateTime:v(`${day}T00:00:00Z`),ActivityDate:v(day),EndDateTime:v(`${module.addDays(day,1)}T00:00:00Z`)})]));await flush();
+  expect(el.shadowRoot.querySelectorAll('article')).toHaveLength(3);
+  expect(el.shadowRoot.textContent).toContain('3 meetings');
+  for(const number of [1,2,3])expect(el.shadowRoot.textContent).toContain(`Meeting ${number}`);
+ });
+ it('keeps query cutoff fixed and counts incomplete until all three independent operations finish',async()=>{
+  const el=createElement('c-operation-test',{is:module.default});el.scopeConfig=scope;el.displayZone='UTC';if(name==='modal')el.initialDate='2026-09-22';document.body.appendChild(el);await flush();
+  const cutoff=graphql.getLastConfig().variables.asOf;expect(graphql.getLastConfig().operationName).toBe('HomepageStartingMeetings');
+  graphql.emit(response([]));await flush();expect(graphql.getLastConfig().operationName).toBe('HomepageContinuingMeetings');expect(el.shadowRoot.textContent).not.toContain('0 meetings');
+  graphql.emit(response([]));await flush();expect(graphql.getLastConfig().operationName).toBe('HomepageAllDayMeetings');
+  graphql.emit(response([]));await flush();expect(el.shadowRoot.textContent).toContain('0 meetings');expect(graphql.getLastConfig().variables.asOf).toBe(cutoff);
  });
 });

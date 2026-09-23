@@ -1,0 +1,147 @@
+{
+  "rows": [
+    {
+      "surface": "today",
+      "width": 320,
+      "query": "",
+      "overflow": [],
+      "cards": 2,
+      "hours": 0,
+      "text": true
+    },
+    {
+      "surface": "today",
+      "width": 360,
+      "query": "",
+      "overflow": [],
+      "cards": 2,
+      "hours": 0,
+      "text": true
+    },
+    {
+      "surface": "today",
+      "width": 420,
+      "query": "",
+      "overflow": [],
+      "cards": 2,
+      "hours": 0,
+      "text": true
+    },
+    {
+      "surface": "tomorrow",
+      "width": 420,
+      "query": "",
+      "overflow": [],
+      "cards": 2,
+      "hours": 0,
+      "text": true
+    },
+    {
+      "surface": "homeCalendar",
+      "width": 420,
+      "query": "",
+      "overflow": [],
+      "cards": 1,
+      "hours": 0,
+      "text": true
+    },
+    {
+      "surface": "calendar",
+      "width": 320,
+      "query": "",
+      "overflow": [],
+      "cards": 2,
+      "hours": 0,
+      "text": true
+    },
+    {
+      "surface": "calendar",
+      "width": 1200,
+      "query": "&expanded=1",
+      "overflow": [],
+      "cards": 0,
+      "hours": 168,
+      "text": true
+    },
+    {
+      "surface": "calendar",
+      "width": 360,
+      "query": "&expanded=1",
+      "overflow": [],
+      "cards": 15,
+      "hours": 0,
+      "text": true
+    },
+    {
+      "surface": "calendar",
+      "width": 1200,
+      "query": "&expanded=1&view=month",
+      "overflow": [],
+      "cards": 0,
+      "hours": 0,
+      "text": true
+    },
+    {
+      "surface": "calendar",
+      "width": 1200,
+      "query": "&expanded=1&view=workweek",
+      "overflow": [],
+      "cards": 0,
+      "hours": 120,
+      "text": true
+    },
+    {
+      "surface": "modal",
+      "width": 1200,
+      "query": "",
+      "overflow": [],
+      "cards": 0,
+      "hours": 0,
+      "text": true
+    },
+    {
+      "surface": "modal",
+      "width": 320,
+      "query": "",
+      "overflow": [],
+      "cards": 5,
+      "hours": 0,
+      "text": true
+    },
+    {
+      "surface": "modal",
+      "width": 1200,
+      "query": "&calendar=1",
+      "overflow": [],
+      "cards": 0,
+      "hours": 168,
+      "text": true
+    },
+    {
+      "surface": "today",
+      "width": 420,
+      "query": "&state=error",
+      "overflow": [],
+      "cards": 0,
+      "hours": 0,
+      "text": false
+    },
+    {
+      "surface": "modal-effective-200-percent",
+      "width": 640,
+      "overflow": [],
+      "cards": 5,
+      "hours": 0,
+      "text": true
+    }
+  ],
+  "errors": [],
+  "interactions": [
+    "View all opens independently wired list with five rows",
+    "Calendar event detail opens and Escape returns to calendar",
+    "Month overflow opens the correct selected-day list",
+    "Modal close remounts compact meetings",
+    "Tomorrow meeting requests native Event navigation",
+    "Compact calendar expands directly into the week view"
+  ]
+}

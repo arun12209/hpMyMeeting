@@ -1,2 +1,8 @@
+**/__tests__/**
+**/node_modules/**
+tests/**
+docs/**
+scripts/**
+**/*.test.js
 **/jsconfig.json
 **/.eslintrc.json

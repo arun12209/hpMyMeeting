@@ -40,6 +40,10 @@ it('does not show incomplete page size as an exact count; deduplicates emissions
  const el=createElement('c-homepage-todays-meeting',{is:Today});el.scopeConfig=scope;el.displayZone='UTC';const summary=jest.fn();el.addEventListener('summarychange',summary);document.body.appendChild(el);await flush();
  const n=node('00U000000000001AAA','2026-09-22T11:00:00Z');emit([n],true);await flush();
  expect(summary.mock.calls.at(-1)[0].detail.exactCountOrNull).toBeNull();
- emit([n],false,'page2');await flush();emit([n],false,'page2');await flush();
+ emit([n],false,'page2');emit([n],false,'page2');await flush();emit([],false,'continuing');await flush();emit([],false,'all-day');await flush();
  expect(summary.mock.calls.at(-1)[0].detail.exactCountOrNull).toBe(1);
+});
+it('clamps card settings and prioritizes all-day, then in-progress, then earliest upcoming',()=>{
+ const now=Date.parse('2026-09-22T10:00:00Z');const records=[{id:'upcoming',start:now+1000,end:now+9000},{id:'ongoing',start:now-1000,end:now+9000},{id:'all-day',start:now-2000,end:now+9000,isAllDay:true},{id:'later',start:now+2000,end:now+10000}];
+ expect(selectCards(records,1,true,now).map(m=>m.id)).toEqual(['all-day']);expect(selectCards(records,2,true,now).map(m=>m.id)).toEqual(['all-day','ongoing']);expect(selectCards(records,99,true,now)).toHaveLength(3);
 });

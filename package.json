@@ -1,1 +1,23 @@
-{"name":"gartner-my-meetings","version":"1.0.0","private":true,"scripts":{"test":"sfdx-lwc-jest -- --runInBand","compile":"node scripts/compile.cjs","check":"npm run compile && npm test"},"devDependencies":{"@lwc/compiler":"8.28.2","@salesforce/sfdx-lwc-jest":"7.9.0","graphql":"16.11.0","luxon":"3.7.2"}}
+{
+  "name": "gartner-my-meetings",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "test": "sfdx-lwc-jest -- --runInBand",
+    "compile": "node scripts/compile.cjs",
+    "check": "npm run audit && npm run compile && npm test",
+    "audit": "node scripts/audit.cjs",
+    "preview:build": "node tests/browser/build.cjs",
+    "test:browser": "npm run preview:build && node tests/browser/check.cjs"
+  },
+  "devDependencies": {
+    "@babel/core": "7.29.7",
+    "@babel/plugin-transform-class-properties": "7.28.6",
+    "@lwc/compiler": "8.28.2",
+    "@salesforce/sfdx-lwc-jest": "7.9.0",
+    "graphql": "16.11.0",
+    "luxon": "3.7.2",
+    "playwright": "1.62.1",
+    "rollup": "4.63.4"
+  }
+}

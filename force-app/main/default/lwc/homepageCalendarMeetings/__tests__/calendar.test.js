@@ -18,8 +18,6 @@ it('exposes all 24 hours and detail; narrow regions switch to agenda',async()=>{
 });
 it('rejects an out-of-range late emission after navigation',async()=>{
  const el=createElement('c-calendar-test',{is:Calendar});el.scopeConfig=scope;el.displayZone='UTC';el.selectedDate='2026-09-22';document.body.appendChild(el);await flush();
- el.shadowRoot.querySelector('lightning-button-icon[alternative-text="Next calendar period"]')?.click();
- // Stub properties are not necessarily reflected as attributes.
- const next=[...el.shadowRoot.querySelectorAll('lightning-button-icon')].find(b=>b.alternativeText==='Next calendar period');next.click();await flush();
+ el.shadowRoot.querySelector('[aria-label="Next calendar period"]').click();await flush();
  graphql.emit(response([meeting()]));await flush();expect(el.shadowRoot.textContent).not.toContain('Meeting 1');
 });

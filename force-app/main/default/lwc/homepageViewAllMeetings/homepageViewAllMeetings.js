@@ -4,55 +4,110 @@ import USER_ID from '@salesforce/user/Id';
 import TIME_ZONE from '@salesforce/i18n/timeZone';
 import LOCALE from '@salesforce/i18n/locale';
 import LightningModal from 'lightning/modal';
+// The target org rejected What.RecordTypeId on the polymorphic Name entity.
+// A reference semi-join filters Opportunity directly. Three disjoint operations
+// avoid combining a semi-join with OR; only one connection is active at a time.
 const MEETINGS_QUERY = gql`
-    query HomepageMeetings($sellerId: ID!, $recordTypeIds: [ID!]!,
-        $rangeStart: DateTime!, $rangeEnd: DateTime!, $dateEnd: Date!,
-        $utcStart: DateTime!, $asOf: DateTime!, $after: String) {
+    query HomepageStartingMeetings($sellerId: ID!, $recordTypeIds: [ID!]!,
+        $rangeStart: DateTime!, $rangeEnd: DateTime!, $asOf: DateTime!, $after: String) {
         uiapi { query { Event(first: 100, after: $after,
-            where: { and: [
-                { OwnerId: { eq: $sellerId } }
-                { Status__c: { in: ["Scheduled", "Rescheduling"] } }
-                { What: { Opportunity: { RecordTypeId: { in: $recordTypeIds } } } }
-                { EndDateTime: { gt: { value: $asOf } } }
-                { or: [
-                    { and: [
-                        { IsAllDayEvent: { eq: false } }
-                        { StartDateTime: { lt: { value: $rangeEnd } } }
-                        { or: [
-                            { EndDateTime: { gt: { value: $rangeStart } } }
-                            { StartDateTime: { gte: { value: $rangeStart } } }
-                        ] }
-                    ] }
-                    { and: [
-                        { IsAllDayEvent: { eq: true } }
-                        { ActivityDate: { lt: { value: $dateEnd } } }
-                        { EndDateTime: { gt: { value: $utcStart } } }
-                    ] }
-                ] }
-            ] }, orderBy: { StartDateTime: { order: ASC }, Id: { order: ASC } }) {
-                edges { cursor node {
-                    Id OwnerId { value } Subject { value }
-                    StartDateTime { value } EndDateTime { value }
-                    IsAllDayEvent { value } ActivityDate { value }
-                    status: Status__c { value }
-                    topic: Topic__c @optional { value }
-                    category: Interaction_Category__c @optional { value }
-                    WhatId { value } WhoId @optional { value }
-                    What { ... on Opportunity { Id Name { value } RecordTypeId { value } } }
-                    Who @optional {
-                        ... on Contact { Id Name @optional { value } }
-                        ... on Lead { Id Name @optional { value } }
-                    }
-                } }
-                pageInfo { startCursor endCursor hasNextPage }
-            }
-        } }
+            where: {
+                OwnerId: { eq: $sellerId }
+                Status__c: { in: ["Scheduled", "Rescheduling"] }
+                WhatId: { inq: { Opportunity: { RecordTypeId: { in: $recordTypeIds } }, ApiName: "Id" } }
+                EndDateTime: { gt: { value: $asOf } }
+                IsAllDayEvent: { eq: false }
+                StartDateTime: { gte: { value: $rangeStart }, lt: { value: $rangeEnd } }
+            }, orderBy: { StartDateTime: { order: ASC }, Id: { order: ASC } }) {
+            edges { cursor node {
+                Id OwnerId { value } Subject { value }
+                StartDateTime { value } EndDateTime { value }
+                IsAllDayEvent { value } ActivityDate { value }
+                status: Status__c { value }
+                topic: Topic__c @optional { value }
+                category: Interaction_Category__c @optional { value }
+                WhatId { value } WhoId @optional { value }
+                What { ... on Opportunity { Id Name { value } RecordTypeId { value } } }
+                Who @optional {
+                    ... on Contact { Id Name @optional { value } }
+                    ... on Lead { Id Name @optional { value } }
+                }
+            } }
+            pageInfo { startCursor endCursor hasNextPage }
+        } } }
+    }
+    query HomepageContinuingMeetings($sellerId: ID!, $recordTypeIds: [ID!]!,
+        $rangeStart: DateTime!, $asOf: DateTime!, $after: String) {
+        uiapi { query { Event(first: 100, after: $after,
+            where: {
+                OwnerId: { eq: $sellerId }
+                Status__c: { in: ["Scheduled", "Rescheduling"] }
+                WhatId: { inq: { Opportunity: { RecordTypeId: { in: $recordTypeIds } }, ApiName: "Id" } }
+                EndDateTime: { gt: { value: $asOf } }
+                IsAllDayEvent: { eq: false }
+                StartDateTime: { lt: { value: $rangeStart } }
+                and: [{ EndDateTime: { gt: { value: $rangeStart } } }]
+            }, orderBy: { StartDateTime: { order: ASC }, Id: { order: ASC } }) {
+            edges { cursor node {
+                Id OwnerId { value } Subject { value }
+                StartDateTime { value } EndDateTime { value }
+                IsAllDayEvent { value } ActivityDate { value }
+                status: Status__c { value }
+                topic: Topic__c @optional { value }
+                category: Interaction_Category__c @optional { value }
+                WhatId { value } WhoId @optional { value }
+                What { ... on Opportunity { Id Name { value } RecordTypeId { value } } }
+                Who @optional {
+                    ... on Contact { Id Name @optional { value } }
+                    ... on Lead { Id Name @optional { value } }
+                }
+            } }
+            pageInfo { startCursor endCursor hasNextPage }
+        } } }
+    }
+    query HomepageAllDayMeetings($sellerId: ID!, $recordTypeIds: [ID!]!,
+        $dateEnd: Date!, $utcStart: DateTime!, $asOf: DateTime!, $after: String) {
+        uiapi { query { Event(first: 100, after: $after,
+            where: {
+                OwnerId: { eq: $sellerId }
+                Status__c: { in: ["Scheduled", "Rescheduling"] }
+                WhatId: { inq: { Opportunity: { RecordTypeId: { in: $recordTypeIds } }, ApiName: "Id" } }
+                EndDateTime: { gt: { value: $asOf } }
+                IsAllDayEvent: { eq: true }
+                ActivityDate: { lt: { value: $dateEnd } }
+                and: [{ EndDateTime: { gt: { value: $utcStart } } }]
+            }, orderBy: { StartDateTime: { order: ASC }, Id: { order: ASC } }) {
+            edges { cursor node {
+                Id OwnerId { value } Subject { value }
+                StartDateTime { value } EndDateTime { value }
+                IsAllDayEvent { value } ActivityDate { value }
+                status: Status__c { value }
+                topic: Topic__c @optional { value }
+                category: Interaction_Category__c @optional { value }
+                WhatId { value } WhoId @optional { value }
+                What { ... on Opportunity { Id Name { value } RecordTypeId { value } } }
+                Who @optional {
+                    ... on Contact { Id Name @optional { value } }
+                    ... on Lead { Id Name @optional { value } }
+                }
+            } }
+            pageInfo { startCursor endCursor hasNextPage }
+        } } }
     }
 `;
 // Kept local deliberately: there is no sixth utility or query bundle.
 const field = (value) => value?.value;
+const formatters = new Map();
+function formatter(locale, options) {
+    const key = JSON.stringify([locale, options]);
+    if (!formatters.has(key)) {
+        if (formatters.size >= 64) formatters.delete(formatters.keys().next().value);
+        formatters.set(key, new Intl.DateTimeFormat(locale, options));
+    }
+    return formatters.get(key);
+}
 export function dateKey(instant, zone) {
-    const parts = new Intl.DateTimeFormat('en-CA', {
+    const parts = formatter('en-CA', {
         timeZone: zone, year: 'numeric', month: '2-digit', day: '2-digit'
     }).formatToParts(new Date(instant));
     const part = (name) => parts.find((p) => p.type === name).value;
@@ -90,6 +145,12 @@ export function intersects(m, start, end, zone) {
     if (m.isAllDay) return m.startDate < end && m.endDate > start;
     const a = midnight(start, zone), b = midnight(end, zone);
     return m.start < b && (m.end > a || (m.start === m.end && m.start >= a));
+}
+export function formatTime(instant, zone, locale) {
+    const wall = formatter('en-CA', {timeZone:zone,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'});
+    const label = wall.format(instant);
+    const ambiguous = [-120,-60,-30,30,60,120].some((minutes) => wall.format(instant + minutes * 60000) === label);
+    return formatter(locale, {timeZone:zone,hour:'numeric',minute:'2-digit', ...(ambiguous ? {timeZoneName:'shortOffset'} : {})}).format(instant);
 }
 export function safeExternalUrl(raw, hosts = []) {
     try {
@@ -130,17 +191,27 @@ export function selectCards(records, max, today, now) {
 }
 
 export default class HomepageViewAllMeetings extends LightningModal {
-    @api scopeConfig;
+    _scopeConfig;
+    @api get scopeConfig() { return this._scopeConfig; }
+    set scopeConfig(value) {
+        const changed = JSON.stringify(value) !== JSON.stringify(this._scopeConfig);
+        this._scopeConfig = value;
+        if (changed && this._connected) this.loadRange();
+    }
     @api displayZone = TIME_ZONE;
     @api maxVisibleMeetings = 3;
     @api integrationConfig;
     records = [];
+    _nextId;
+    _lane = 0;
+    _connectionHasMore = false;
     after = null;
     nextCursor = null;
     hasMore = false;
     loading = true;
     complete = false;
     errorMessage = '';
+    errorDetails = '';
     announcement = '';
     queryAsOf;
     rangeStart;
@@ -148,10 +219,10 @@ export default class HomepageViewAllMeetings extends LightningModal {
     dateStart;
     dateEnd;
     lastCheckedAt;
-    searchTerm = '';
     sortDescending = false;
     _pages = new Map();
     _refresh;
+    _refreshing;
     _connected = false;
     _timer;
     _pageBudget = 1000;
@@ -185,39 +256,57 @@ export default class HomepageViewAllMeetings extends LightningModal {
             this.scopeConfig.recordTypeIds.every((id) => /^012[a-zA-Z0-9]{12}(?:[a-zA-Z0-9]{3})?$/.test(id));
     }
     get activeQuery() { return this._connected && this.configured && this.viewActive && this.rangeStart ? MEETINGS_QUERY : undefined; }
+    get activeOperation() { return ['HomepageStartingMeetings', 'HomepageContinuingMeetings', 'HomepageAllDayMeetings'][this._lane]; }
     get queryVariables() {
         return { sellerId: this.scopeConfig?.sellerId, recordTypeIds: this.scopeConfig?.recordTypeIds,
             rangeStart: this.rangeStart, rangeEnd: this.rangeEnd, dateEnd: this.dateEnd,
             utcStart: this.dateStart ? `${this.dateStart}T00:00:00.000Z` : undefined,
             asOf: this.queryAsOf, after: this.after };
     }
+    setFailure(error, stage = 'Loading meetings') {
+        const errors = Array.isArray(error) ? error : [error];
+        this.errorDetails = errors.map((item) => {
+            const code = item?.extensions?.errorCode || item?.errorCode || item?.name;
+            const message = item?.message || item?.body?.message || String(item);
+            return `${code ? `${code}: ` : ''}${message}`;
+        }).join('\n');
+        this.errorMessage = `${stage} failed.`;
+        this.loading = false;
+        this.complete = false;
+    }
     loadRange() {
         clearTimeout(this._timer);
+        let start, end, rangeStart, rangeEnd;
         try {
-            const [start, end] = this.calculateRange();
-            this.dateStart = start; this.dateEnd = end;
-            this.rangeStart = new Date(midnight(start, this.displayZone)).toISOString();
-            this.rangeEnd = new Date(midnight(end, this.displayZone)).toISOString();
-            this.queryAsOf = new Date().toISOString();
-            this._scopeKey = JSON.stringify([this.rangeStart, this.rangeEnd, this.queryAsOf, this.scopeConfig]);
-            this.after = null; this.nextCursor = null; this.hasMore = false;
-            this._pages = new Map(); this.records = []; this.complete = false; this._invalid = false;
-            this.loading = this.configured && this.viewActive; this.errorMessage = '';
-            this._pageBudget = 1000;
-            this.emitSummary(); this.armTimer();
-        } catch {
-            this.rangeStart = undefined; this.loading = false;
-            this.errorMessage = 'Meetings unavailable: check the configured timezone and date.';
+            [start, end] = this.calculateRange();
+            rangeStart = new Date(midnight(start, this.displayZone)).toISOString();
+            rangeEnd = new Date(midnight(end, this.displayZone)).toISOString();
+        } catch (error) {
+            this.rangeStart = undefined;
+            this.setFailure(error, 'Preparing meeting dates');
+            return;
         }
+        this.dateStart = start; this.dateEnd = end;
+        this.rangeStart = rangeStart; this.rangeEnd = rangeEnd;
+        this.queryAsOf = new Date().toISOString();
+        this._scopeKey = JSON.stringify([rangeStart, rangeEnd, this.queryAsOf, this.scopeConfig]);
+        this._refresh = undefined;
+        this._lane = 0; this._connectionHasMore = false;
+        this.after = null; this.nextCursor = null; this.hasMore = false;
+        this._pages = new Map(); this.records = []; this.complete = false; this._invalid = false;
+        this.loading = this.configured && this.viewActive; this.errorMessage = ''; this.errorDetails = '';
+        this._pageBudget = 1000;
+        this.emitSummary(); this.armTimer();
     }
-    @wire(graphql, { query: '$activeQuery', variables: '$queryVariables' })
+    @wire(graphql, { query: '$activeQuery', variables: '$queryVariables', operationName: '$activeOperation' })
     wiredMeetings({ data, errors, refresh }) {
         if (!this.activeQuery) return;
         if (typeof refresh === 'function') {
             this._refresh = refresh;
         }
         if (errors?.length) {
-            this.errorMessage = 'Could not load meetings. Required fields or meeting access may be unavailable. Retry or contact your Salesforce administrator.';
+            this.lastCheckedAt = new Date().toISOString();
+            this.setFailure(errors);
             this.loading = false; this.complete = false;
             // Fail closed: errors cannot establish the eligibility of partial data.
             this.records = []; this._pages.clear(); this.hasMore = false;
@@ -226,7 +315,7 @@ export default class HomepageViewAllMeetings extends LightningModal {
         if (!data) { this.loading = true; return; }
         const connection = data.uiapi?.query?.Event;
         if (!connection?.pageInfo || !Array.isArray(connection.edges)) {
-            this.errorMessage = 'Meetings unavailable: the response could not be verified.';
+            this.setFailure(new Error('Expected Event edges and pageInfo were not returned.'));
             this.loading = false; this.complete = false; this.emitSummary(); return;
         }
         const now = Date.now();
@@ -235,7 +324,7 @@ export default class HomepageViewAllMeetings extends LightningModal {
         // empty/overlapping stale emissions still require target-adapter race validation.
         if (normalized.some((m) => m && !intersects(m, this.dateStart, this.dateEnd, this.displayZone))) return;
         this._invalid = this._invalid || connection.edges.some(({ node }, i) => !normalized[i] && !(Date.parse(field(node.EndDateTime)) <= now));
-        const pageKey = connection.pageInfo.startCursor || '__empty__';
+        const pageKey = `${this._lane}:${connection.pageInfo.startCursor || '__empty__'}`;
         const known = this._pages.get(pageKey);
         const isCurrentPage = !known || known.after === this.after;
         this._pages.set(pageKey, { after: known ? known.after : this.after, records: normalized.filter(Boolean) });
@@ -245,39 +334,60 @@ export default class HomepageViewAllMeetings extends LightningModal {
         }
         const unique = new Map();
         for (const page of this._pages.values()) for (const m of page.records) if (m.end > now) unique.set(m.id, m);
+        const previousRecords = this.records;
         this.records = [...unique.values()];
         if (isCurrentPage) {
             this.nextCursor = connection.pageInfo.endCursor;
-            this.hasMore = connection.pageInfo.hasNextPage;
+            this._connectionHasMore = connection.pageInfo.hasNextPage;
+            this.hasMore = this._connectionHasMore || this._lane < 2;
             this.complete = !this.hasMore && !this._invalid;
         }
         this.loading = false; this.errorMessage = this._invalid ? 'Some meetings could not be verified. Results are incomplete.' : '';
+        this.errorDetails = this._invalid ? 'One or more returned events had missing or inconsistent required fields, eligibility, or all-day dates. These events were excluded; the meeting count is incomplete.' : '';
         this.lastCheckedAt = new Date(now).toISOString();
-        this.prune();
+        this.prune(previousRecords);
         if (isCurrentPage && this.hasMore && this._pages.size * 100 < this._pageBudget) {
             const scopeKey = this._scopeKey;
             Promise.resolve().then(() => { if (this._connected && !this.loading && this._scopeKey === scopeKey) this.loadMore(); });
         }
     }
     loadMore() {
-        if (this.loading || !this.hasMore || !this.nextCursor || this.nextCursor === this.after) return;
+        if (this.loading || !this.hasMore) return;
+        if (this._connectionHasMore) {
+            if (!this.nextCursor || this.nextCursor === this.after) {
+                this.setFailure(new Error('Salesforce returned a non-advancing meeting cursor.'));
+                return;
+            }
+            this.after = this.nextCursor;
+        } else if (this._lane < 2) {
+            this._lane += 1; this.after = null; this.nextCursor = null;
+        } else return;
         this._pageBudget = Math.max(this._pageBudget, (this._pages.size + 1) * 100);
-        this.after = this.nextCursor; this.loading = true;
+        this.loading = true;
     }
     @api async refreshMeetings() {
+        if (this._refreshing) return this._refreshing;
+        this._refreshing = this.performRefresh();
+        try { await this._refreshing; }
+        finally { this._refreshing = undefined; }
+        return undefined;
+    }
+    async performRefresh() {
         if (!this.viewActive) { this.template.querySelector('c-homepage-calendar-meetings')?.refreshMeetings(); return; }
         this.prune();
         // Refresh the currently wired collection through the v2 contract, then restart membership.
         const refresh = this._refresh;
+        const scopeKey = this._scopeKey;
         try { if (refresh) await refresh(); }
-        catch { this.errorMessage = 'Could not refresh meetings. Please retry.'; return; }
-        if (this._connected) this.loadRange();
+        catch (error) { this.setFailure(error, 'Refreshing meetings'); return; }
+        if (this._connected && this._scopeKey === scopeKey) this.loadRange();
     }
-    prune() {
+    prune(previousRecords = this.records) {
         const now = Date.now();
-        const removed = this.records.filter((m) => m.end <= now);
+        const removed = previousRecords.filter((m) => m.end <= now);
         const activeId = this.template.activeElement?.dataset?.eventId;
         this.records = this.records.filter((m) => m.end > now);
+        this._nextId = this.records.filter((m) => !m.isAllDay && m.start > now).sort((a,b) => a.start-b.start || a.id.localeCompare(b.id))[0]?.id;
         if (removed.some((m) => m.id === activeId || m.id === this.detailId)) {
             this.detailId = null;
             this.announcement = 'Meeting ended and was removed.';
@@ -300,37 +410,34 @@ export default class HomepageViewAllMeetings extends LightningModal {
         }
         return false;
     }
-    emitSummary() {
-        this.dispatchEvent(new CustomEvent('summarychange', { detail: {
-            dateKey: this.selectedKey, exactCountOrNull: this.complete ? this.records.filter((m) => m.end > Date.now()).length : null,
-            completeness: this.complete ? 'complete' : this.errorMessage ? 'failed' : this.loading ? 'loading' : 'partial',
-            lastCheckedAt: this.lastCheckedAt
-        } }));
-    }
+    // No external event is needed from LightningModal. Under Lightning Locker,
+    // dispatchEvent on the modal can throw, which previously masqueraded as a date error.
+    emitSummary() {}
     get heading() {
-        return `${new Intl.DateTimeFormat(LOCALE, { dateStyle: 'full', timeZone: 'UTC' }).format(new Date(`${this.selectedKey}T12:00:00Z`))} · ${this.displayZone}`;
+        return `${formatter(LOCALE, { dateStyle: 'full', timeZone: 'UTC' }).format(new Date(`${this.selectedKey}T12:00:00Z`))} · ${this.displayZone}`;
     }
     get setupMessage() { return this.configured ? '' : 'Meeting setup pending: the two Opportunity record types must be resolved.'; }
     get statusText() {
-        if (this.loading) return 'Loading meetings…';
-        return this.complete ? `${this.records.filter((m) => m.end > Date.now()).length} meetings · All loaded` : 'Results incomplete · Continue loading when available';
+        if (this.errorMessage || this.loading || !this.configured) return '';
+        const count = this.records.filter((m) => m.end > Date.now()).length;
+        return this.complete ? `${count} ${count === 1 ? 'meeting' : 'meetings'}` : `${count} loaded`;
     }
-    get searchLabel() { return this.complete ? 'Search this day' : 'Search loaded meetings'; }
-    handleSearch(event) { this.searchTerm = event.target.value || ''; }
+    get showFooter() { return !this.errorMessage && this.configured && (this.records.length > 0 || this.complete); }
+    get viewAllLabel() { return this.complete ? `View all ${this.records.length} meetings` : 'View all meetings'; }
     get filteredRecords() {
-        const term = this.searchTerm.toLocaleLowerCase(LOCALE);
-        return this.records.filter((m) => m.end > Date.now() &&
-            [m.subject, m.opportunity, m.topic, m.category, m.person].join(' ').toLocaleLowerCase(LOCALE).includes(term))
+        return this.records.filter((m) => m.end > Date.now())
             .sort((a, b) => Number(b.isAllDay) - Number(a.isAllDay) ||
                 (this.sortDescending ? b.start - a.start : a.start - b.start) || a.id.localeCompare(b.id));
     }
     viewModel(m) {
-        const time = new Intl.DateTimeFormat(LOCALE, { timeZone: this.displayZone, hour: 'numeric', minute: '2-digit', timeZoneName: 'shortOffset' });
-        const full = new Intl.DateTimeFormat(LOCALE, { timeZone: this.displayZone, dateStyle: 'medium', timeStyle: 'long' });
+        const full = formatter(LOCALE, { timeZone: this.displayZone, dateStyle: 'medium', timeStyle: 'long' });
         const impactUrl = safeExternalUrl(this.resolveImpactAssessmentUrl({ eventId: m.id, opportunityId: m.opportunityId }), this.integrationConfig?.approvedImpactHosts);
-        return { ...m, timeLabel: m.isAllDay ? 'All day' : `${time.format(m.start)} – ${time.format(m.end)}`,
+        return { ...m, timeLabel: m.isAllDay ? 'All day' : `${formatTime(m.start, this.displayZone, LOCALE)} – ${formatTime(m.end, this.displayZone, LOCALE)}`,
             fullTime: m.isAllDay ? `${m.startDate} through ${addDays(m.endDate, -1)} · All day` : `${full.format(m.start)} – ${full.format(m.end)}`,
-            timing: m.isAllDay ? '' : m.start <= Date.now() ? 'In progress' : 'Upcoming',
+            timing: m.isAllDay ? '' : m.start <= Date.now() ? 'In progress' : this._nextId === m.id ? 'Next' : 'Upcoming',
+            timingClass: m.start <= Date.now() && !m.isAllDay ? 'timing ongoing' : this._nextId === m.id ? 'timing next' : 'timing',
+            eventClass: m.rescheduling ? 'grid-event rescheduling-event' : 'grid-event',
+            startTime: m.isAllDay ? 'All day' : formatTime(m.start,this.displayZone,LOCALE),
             impactUrl, impactDisabled: !impactUrl };
     }
     // Arun: implement this same extension point in each of the four consumers.
@@ -352,28 +459,32 @@ export default class HomepageViewAllMeetings extends LightningModal {
         this.navigateRecord({ recordId: opportunity ? m.opportunityId : m.id, objectApiName: opportunity ? 'Opportunity' : 'Event' });
     }
     navigateRecord(detail) { this.dispatchEvent(new CustomEvent('requestnavigation', { detail })); }
-    handleViewAll() { this.dispatchEvent(new CustomEvent('viewall', { detail: { date: this.selectedKey, mode: 'list' } })); }
-    handleExpand() { this.dispatchEvent(new CustomEvent('expand', { detail: { date: this.selectedKey, mode: 'calendar' } })); }
 
     @api initialDate;
     @api initialMode = 'list';
     availableWidth = 0;
     _resizeObserver;
+    get listHeading() { if (this.activeTab==='today') return 'Today’s meetings'; if (this.activeTab==='tomorrow') return 'Tomorrow’s meetings'; return formatter(LOCALE,{dateStyle:'full',timeZone:'UTC'}).format(new Date(`${this.selectedKey}T12:00:00Z`)); }
     get showTable() { return this.availableWidth >= 760; }
     selectedKey;
     _todayKey;
     mode = 'list';
     activeTab = 'today';
     initializeView() {
-        if (typeof ResizeObserver !== 'undefined') {
-            this._resizeObserver = new ResizeObserver((entries) => { this.availableWidth = entries[0]?.contentRect.width || 0; });
-            this._resizeObserver.observe(this.hostElement);
-        }
         this._todayKey = dateKey(Date.now(), this.displayZone);
         this.selectedKey = validDate(this.initialDate) ? this.initialDate : this._todayKey;
         this.mode = this.initialMode === 'calendar' ? 'calendar' : 'list';
         this.activeTab = this.mode === 'calendar' ? 'calendar' : this.selectedKey === this._todayKey ? 'today' :
             this.selectedKey === addDays(this._todayKey, 1) ? 'tomorrow' : 'selected';
+    }
+    renderedCallback() {
+        if (!this._resizeObserver && typeof ResizeObserver !== 'undefined') {
+            const surface = this.template.querySelector('.modal-content');
+            if (surface) {
+                this._resizeObserver = new ResizeObserver((entries) => { this.availableWidth = entries[0]?.contentRect.width || 0; });
+                this._resizeObserver.observe(surface);
+            }
+        }
     }
     calculateRange() { return [this.selectedKey, addDays(this.selectedKey, 1)]; }
     onDayRollover() {
@@ -396,15 +507,36 @@ export default class HomepageViewAllMeetings extends LightningModal {
             return url.origin === window.location.origin && url.pathname.startsWith('/lightning/') && !url.username && !url.password ? url.href : null;
         } catch { return null; }
     }
+    get tabs() {
+        const values = [{value:'today',label:'Today'},{value:'tomorrow',label:'Tomorrow'},{value:'calendar',label:'Calendar'}];
+        if (this.activeTab === 'selected') values.push({value:'selected',label:'Selected day'});
+        return values.map((tab) => ({...tab,id:`tab-${tab.value}`,selected:tab.value===this.activeTab,
+            className:tab.value===this.activeTab?'tab active':'tab',tabIndex:tab.value===this.activeTab?'0':'-1',
+            showCount:tab.value===this.activeTab && tab.value!=='calendar' && this.count != null,count:this.count}));
+    }
+    get activeTabId() { return `tab-${this.activeTab}`; }
+    handleTabKey(event) {
+        const values=this.tabs.map((tab)=>tab.value);
+        const current=values.indexOf(this.activeTab);
+        let index;
+        if (event.key==='ArrowRight') index=(current+1)%values.length;
+        else if (event.key==='ArrowLeft') index=(current+values.length-1)%values.length;
+        else if (event.key==='Home') index=0;
+        else if (event.key==='End') index=values.length-1;
+        else return;
+        event.preventDefault();
+        this.handleTab({currentTarget:{dataset:{tab:values[index]}}});
+        Promise.resolve().then(()=>this.template.querySelector(`[data-tab="${values[index]}"]`)?.focus());
+    }
     handleTab(event) {
-        const value = event.target.value;
+        const value = event.currentTarget?.dataset?.tab || event.target?.value;
         if (!['today', 'tomorrow', 'calendar', 'selected'].includes(value) || value === this.activeTab) return;
         this.activeTab = value;
         this.mode = value === 'calendar' ? 'calendar' : 'list';
         if (value === 'today' || value === 'tomorrow') this.selectedKey = addDays(dateKey(Date.now(), this.displayZone), value === 'tomorrow' ? 1 : 0);
-        this.searchTerm = ''; this.loadRange();
+        this.loadRange();
     }
-    handleCalendarList(event) { this.selectedKey = event.detail.date; this.activeTab = 'selected'; this.mode = 'list'; this.searchTerm = ''; this.loadRange(); }
+    handleCalendarList(event) { this.selectedKey = event.detail.date; this.activeTab = 'selected'; this.mode = 'list'; this.loadRange(); }
     handleCalendarDate(event) { this.selectedKey = event.detail.date; }
     handleCalendarNavigation(event) { this.navigateRecord(event.detail); }
     navigateRecord(navigation) { this.close({ navigation, date: this.selectedKey }); }

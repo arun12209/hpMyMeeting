@@ -1,0 +1,87 @@
+# Offline syntax-checked; target schema not verified. Select one operationName at a time.
+query HomepageStartingMeetings($sellerId: ID!, $recordTypeIds: [ID!]!,
+        $rangeStart: DateTime!, $rangeEnd: DateTime!, $asOf: DateTime!, $after: String) {
+        uiapi { query { Event(first: 100, after: $after,
+            where: {
+                OwnerId: { eq: $sellerId }
+                Status__c: { in: ["Scheduled", "Rescheduling"] }
+                WhatId: { inq: { Opportunity: { RecordTypeId: { in: $recordTypeIds } }, ApiName: "Id" } }
+                EndDateTime: { gt: { value: $asOf } }
+                IsAllDayEvent: { eq: false }
+                StartDateTime: { gte: { value: $rangeStart }, lt: { value: $rangeEnd } }
+            }, orderBy: { StartDateTime: { order: ASC }, Id: { order: ASC } }) {
+            edges { cursor node {
+                Id OwnerId { value } Subject { value }
+                StartDateTime { value } EndDateTime { value }
+                IsAllDayEvent { value } ActivityDate { value }
+                status: Status__c { value }
+                topic: Topic__c @optional { value }
+                category: Interaction_Category__c @optional { value }
+                WhatId { value } WhoId @optional { value }
+                What { ... on Opportunity { Id Name { value } RecordTypeId { value } } }
+                Who @optional {
+                    ... on Contact { Id Name @optional { value } }
+                    ... on Lead { Id Name @optional { value } }
+                }
+            } }
+            pageInfo { startCursor endCursor hasNextPage }
+        } } }
+    }
+    query HomepageContinuingMeetings($sellerId: ID!, $recordTypeIds: [ID!]!,
+        $rangeStart: DateTime!, $asOf: DateTime!, $after: String) {
+        uiapi { query { Event(first: 100, after: $after,
+            where: {
+                OwnerId: { eq: $sellerId }
+                Status__c: { in: ["Scheduled", "Rescheduling"] }
+                WhatId: { inq: { Opportunity: { RecordTypeId: { in: $recordTypeIds } }, ApiName: "Id" } }
+                EndDateTime: { gt: { value: $asOf } }
+                IsAllDayEvent: { eq: false }
+                StartDateTime: { lt: { value: $rangeStart } }
+                and: [{ EndDateTime: { gt: { value: $rangeStart } } }]
+            }, orderBy: { StartDateTime: { order: ASC }, Id: { order: ASC } }) {
+            edges { cursor node {
+                Id OwnerId { value } Subject { value }
+                StartDateTime { value } EndDateTime { value }
+                IsAllDayEvent { value } ActivityDate { value }
+                status: Status__c { value }
+                topic: Topic__c @optional { value }
+                category: Interaction_Category__c @optional { value }
+                WhatId { value } WhoId @optional { value }
+                What { ... on Opportunity { Id Name { value } RecordTypeId { value } } }
+                Who @optional {
+                    ... on Contact { Id Name @optional { value } }
+                    ... on Lead { Id Name @optional { value } }
+                }
+            } }
+            pageInfo { startCursor endCursor hasNextPage }
+        } } }
+    }
+    query HomepageAllDayMeetings($sellerId: ID!, $recordTypeIds: [ID!]!,
+        $dateEnd: Date!, $utcStart: DateTime!, $asOf: DateTime!, $after: String) {
+        uiapi { query { Event(first: 100, after: $after,
+            where: {
+                OwnerId: { eq: $sellerId }
+                Status__c: { in: ["Scheduled", "Rescheduling"] }
+                WhatId: { inq: { Opportunity: { RecordTypeId: { in: $recordTypeIds } }, ApiName: "Id" } }
+                EndDateTime: { gt: { value: $asOf } }
+                IsAllDayEvent: { eq: true }
+                ActivityDate: { lt: { value: $dateEnd } }
+                and: [{ EndDateTime: { gt: { value: $utcStart } } }]
+            }, orderBy: { StartDateTime: { order: ASC }, Id: { order: ASC } }) {
+            edges { cursor node {
+                Id OwnerId { value } Subject { value }
+                StartDateTime { value } EndDateTime { value }
+                IsAllDayEvent { value } ActivityDate { value }
+                status: Status__c { value }
+                topic: Topic__c @optional { value }
+                category: Interaction_Category__c @optional { value }
+                WhatId { value } WhoId @optional { value }
+                What { ... on Opportunity { Id Name { value } RecordTypeId { value } } }
+                Who @optional {
+                    ... on Contact { Id Name @optional { value } }
+                    ... on Lead { Id Name @optional { value } }
+                }
+            } }
+            pageInfo { startCursor endCursor hasNextPage }
+        } } }
+    }

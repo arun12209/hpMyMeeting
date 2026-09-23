@@ -3,3 +3,5 @@ coverage/
 .sf/
 .sfdx/
 .DS_Store
+tests/browser/dist/
+*.zip

@@ -1,68 +1,55 @@
-<template>
-    <div class="toolbar">
-        <lightning-button-icon icon-name="utility:chevronleft" alternative-text="Previous calendar period" onclick={previousPeriod}></lightning-button-icon>
-        <h3>{monthHeading}</h3>
-        <lightning-button-icon icon-name="utility:chevronright" alternative-text="Next calendar period" onclick={nextPeriod}></lightning-button-icon>
-        <lightning-button label="Today" onclick={goToday}></lightning-button>
-        <template lwc:if={isExpanded}><lightning-combobox label="Calendar view" value={view} options={viewOptions} onchange={changeView}></lightning-combobox></template>
-    </div>
-    <template lwc:if={showSearch}><lightning-input type="search" label={searchLabel} value={searchTerm} onchange={handleSearch}></lightning-input></template>
-    <template lwc:if={showMonth}>
-        <table class="month" role="grid" aria-label={monthHeading}>
-            <thead><tr><template for:each={dayNames} for:item="day"><th key={day.id} scope="col">{day.label}</th></template></tr></thead>
-            <tbody><template for:each={weeks} for:item="week"><tr key={week.key}><template for:each={week.days} for:item="day">
-                <td key={day.key} aria-selected={day.selected}><button class={day.cellClass} aria-label={day.label} aria-current={day.current} tabindex={day.tabIndex} data-date={day.key} onclick={selectDay} onkeydown={handleDateKey}><span>{day.number}</span><span class="dots" aria-hidden="true">{day.dots}</span></button>
-                <template for:each={day.titles} for:item="meeting"><button class="month-event" key={meeting.id} data-event-id={meeting.id} onclick={openDetail}>{meeting.subject}</button></template>
-                <template lwc:if={day.overflow}><button class="overflow" data-date={day.key} onclick={overflow}>{day.overflow}</button></template></td>
-            </template></tr></template></tbody>
-        </table>
-    </template>
-<h3 data-heading tabindex="-1">{heading}</h3>
-<p class="scope">Only owned Renewal / Growth Opportunity meetings that have not ended.</p>
-<p role="status" class="slds-assistive-text">{announcement}</p>
-<template lwc:if={setupMessage}><p class="notice">{setupMessage}</p></template>
-<template lwc:if={errorMessage}><p role="alert" class="notice">{errorMessage}</p><lightning-button label="Retry" onclick={refreshMeetings}></lightning-button></template>
-<template lwc:if={loading}><div class="loading" role="status">Loading meetings…</div></template>
-    <template lwc:if={showTimeGrid}>
-        <p class="muted">{rangeHeading} · All 24 hours are reachable. Select a meeting for full details.</p>
-        <div class="time-scroll" tabindex="0" role="region" aria-label="Meeting time grid, scroll for all hours">
-            <div class="time-grid"><template for:each={gridDays} for:item="day"><section class="time-day" key={day.key}>
-                <h4>{day.label}</h4><div class="all-day"><span class="muted">All day</span><template for:each={day.allDay} for:item="meeting"><button key={meeting.id} data-event-id={meeting.id} onclick={openDetail}>{meeting.subject}</button></template></div>
-                <div class="hours" style={day.height}>
-                    <template for:each={day.hours} for:item="hour"><div class="hour" key={hour.id}>{hour.label}</div></template>
-                    <div class="events"><template for:each={day.events} for:item="meeting"><button class="grid-event" style={meeting.position} key={meeting.id} data-event-id={meeting.id} aria-label={meeting.subject} onclick={openDetail}>{meeting.subject}<span class="slds-assistive-text">{meeting.fullTime}</span></button></template></div>
-                    <template lwc:if={day.isToday}><div class="now-line" style={day.nowPosition}><span class="slds-assistive-text">Current time</span></div></template>
-                </div>
-            </section></template></div>
-        </div>
-    </template>
-    <template lwc:if={detailId}><section onkeydown={detailKey} aria-label="Meeting details"><h3 data-detail-heading tabindex="-1">Meeting details</h3><lightning-button label="Back to calendar" onclick={closeDetail}></lightning-button><template for:each={detailMeetings} for:item="meeting">
-    <article class="meeting" key={meeting.id}>
-        <div class="time"><strong>{meeting.fullTime}</strong><span>{meeting.timing}</span></div>
-        <a class="subject" href={meeting.eventUrl} data-event-id={meeting.id} onclick={handleRecord}>{meeting.subject}</a>
-        <template lwc:if={meeting.rescheduling}><span class="subtle">Rescheduling</span></template>
-        <a href={meeting.opportunityUrl} data-event-id={meeting.id} data-kind="opportunity" onclick={handleRecord}>{meeting.opportunity}</a>
-        <p><span class="muted">Category: </span>{meeting.category}</p>
-        <p><span class="muted">Topic: </span>{meeting.topic}</p>
-        <p><span class="muted">Primary related person: </span>{meeting.person}</p>
-        <p class="muted">Full attendee list unavailable · Open the event for attendees.</p>
-        <template lwc:if={meeting.impactUrl}><a class="impact" href={meeting.impactUrl} target="_blank" rel="noopener noreferrer" data-event-id={meeting.id} onclick={handleImpact}>Open Impact Assessment <span class="slds-assistive-text">(opens in a new tab)</span>↗</a></template>
-        <template lwc:else><button class="impact" disabled>Open Impact Assessment</button><span class="muted">Setup pending</span></template>
-    </article>
-</template></section></template>
-    <template lwc:if={showAgenda}><template for:each={visibleMeetings} for:item="meeting">
-    <article class="meeting" key={meeting.id}>
-        <div class="time"><strong>{meeting.timeLabel}</strong><span>{meeting.timing}</span></div>
-        <a class="subject" href={meeting.eventUrl} data-event-id={meeting.id} onclick={handleRecord}>{meeting.subject}</a>
-        <template lwc:if={meeting.rescheduling}><span class="subtle">Rescheduling</span></template>
-        <a href={meeting.opportunityUrl} data-event-id={meeting.id} data-kind="opportunity" onclick={handleRecord}>{meeting.opportunity}</a>
-        <p><span class="muted">Category: </span>{meeting.category}</p>
-        <p><span class="muted">Topic: </span>{meeting.topic}</p>
-        <p><span class="muted">Primary related person: </span>{meeting.person}</p>
-        <p class="muted">Full attendee list unavailable · Open the event for attendees.</p>
-        <template lwc:if={meeting.impactUrl}><a class="impact" href={meeting.impactUrl} target="_blank" rel="noopener noreferrer" data-event-id={meeting.id} onclick={handleImpact}>Open Impact Assessment <span class="slds-assistive-text">(opens in a new tab)</span>↗</a></template>
-        <template lwc:else><button class="impact" disabled>Open Impact Assessment</button><span class="muted">Setup pending</span></template>
-    </article>
-</template><template lwc:if={isEmpty}><p>No upcoming or ongoing Opportunity meetings for this selection.</p></template></template>
-    <p class="muted">{statusText}</p><div class="footer"><template lwc:if={hasMore}><lightning-button label="Continue loading" disabled={loading} onclick={loadMore}></lightning-button></template><lightning-button label="View all for this date" onclick={handleViewAll}></lightning-button><template lwc:if={isExpanded}></template><template lwc:else><lightning-button label="Expand calendar" onclick={handleExpand}></lightning-button></template></div>
-</template>
+<template><div class={calendarClass}>
+<div class="calendar-toolbar"><div class="calendar-date-controls"><h2 class="month-title" data-heading tabindex="-1">{monthHeading}</h2><div class="period-controls"><button class="icon-button" aria-label="Previous calendar period" onclick={previousPeriod}><lightning-icon icon-name="utility:chevronleft" size="x-small" alternative-text=""></lightning-icon></button><button class="icon-button" aria-label="Next calendar period" onclick={nextPeriod}><lightning-icon icon-name="utility:chevronright" size="x-small" alternative-text=""></lightning-icon></button><button class="today-button" onclick={goToday}>Today</button></div></div>
+<template lwc:if={isExpanded}><div class="view-switch" role="group" aria-label="Calendar view"><template for:each={calendarViews} for:item="option"><button key={option.value} class={option.className} data-view={option.value} aria-pressed={option.pressed} onclick={changeView}>{option.label}</button></template></div></template>
+<template lwc:else><button class="icon-button expand-icon" aria-label="Expand calendar" title="Expand calendar" onclick={handleExpand}><lightning-icon icon-name="utility:expand_alt" size="x-small" alternative-text=""></lightning-icon></button></template></div>
+<p role="status" class="assistive">{announcement}</p>
+<template lwc:if={setupMessage}><div class="state-message"><lightning-icon icon-name="utility:info" size="x-small" class="" alternative-text=""></lightning-icon><p>{setupMessage}</p></div></template>
+<template lwc:if={errorMessage}><section class="error-state" role="alert">
+    <div class="error-heading"><lightning-icon icon-name="utility:warning" size="x-small" class="" alternative-text=""></lightning-icon><strong>Meetings couldn’t load</strong></div>
+    <p>Use the refresh icon to try again.</p>
+    <details class="error-details"><summary>Technical details</summary><pre>{errorDetails}</pre></details>
+</section></template>
+<template lwc:if={loading}><div class="loading-state" role="status"><span class="loading-dot"></span><span>Loading meetings…</span></div></template>
+<template lwc:if={showMonth}><table class="month" role="grid" aria-label={monthHeading}>
+<thead><tr><template for:each={dayNames} for:item="day"><th key={day.id} scope="col">{day.label}</th></template></tr></thead>
+<tbody><template for:each={weeks} for:item="week"><tr key={week.key}><template for:each={week.days} for:item="day"><td key={day.key} aria-selected={day.selected}>
+<button class={day.cellClass} aria-label={day.label} aria-current={day.current} tabindex={day.tabIndex} data-date={day.key} onclick={selectDay} onkeydown={handleDateKey}><span>{day.number}</span><span class="dots" aria-hidden="true">{day.dots}</span></button>
+<template for:each={day.titles} for:item="meeting"><button class="month-event" key={meeting.id} data-event-id={meeting.id} title={meeting.subject} onclick={openDetail}><span class="month-time">{meeting.startTime}</span><span>{meeting.subject}</span></button></template>
+<template lwc:if={day.overflow}><button class="overflow" data-date={day.key} onclick={overflow}>{day.overflow}</button></template>
+</td></template></tr></template></tbody></table></template>
+<template lwc:if={showTimeGrid}><div class="time-scroll" tabindex="0" role="region" aria-label="Meeting calendar. Scroll for all hours."><div class="time-grid">
+<template for:each={gridDays} for:item="day"><section class={day.columnClass} key={day.key}>
+<div class={day.dayClass}><span>{day.weekday}</span><strong>{day.number}</strong></div>
+<div class="all-day"><span class="all-day-caption">All day</span><template for:each={day.allDay} for:item="meeting"><button class="all-day-event" key={meeting.id} data-event-id={meeting.id} onclick={openDetail}>{meeting.subject}</button></template><template lwc:if={day.allDayOverflow}><button class="overflow" data-date={day.key} onclick={overflow}>{day.allDayOverflow}</button></template></div>
+<div class="hours" style={day.height}><template for:each={day.hours} for:item="hour"><div class="hour" key={hour.id}><span class="hour-label">{hour.label}</span></div></template>
+<div class="events"><template for:each={day.events} for:item="meeting"><button class={meeting.eventClass} style={meeting.position} key={meeting.id} data-event-id={meeting.id} aria-label={meeting.subject} title={meeting.fullTime} onclick={openDetail}><strong>{meeting.subject}</strong><span>{meeting.timeLabel}</span><span class="assistive">{meeting.fullTime}</span></button></template></div>
+<template lwc:if={day.isToday}><div class="now-line" style={day.nowPosition}><span class="assistive">Current time</span></div></template></div>
+</section></template></div></div></template>
+<template lwc:if={detailId}><section class="detail" onkeydown={detailKey} aria-label="Meeting details"><div class="detail-toolbar"><button class="text-action" onclick={closeDetail}><lightning-icon icon-name="utility:back" size="x-small" alternative-text=""></lightning-icon>Back to calendar</button><h3 data-detail-heading tabindex="-1">Meeting details</h3></div><template for:each={detailMeetings} for:item="meeting">
+<article class="meeting" key={meeting.id}>
+    <div class="meeting-topline"><span class="meeting-time"><lightning-icon icon-name="utility:clock" size="x-small" class="" alternative-text=""></lightning-icon>{meeting.fullTime}</span><span class={meeting.timingClass}>{meeting.timing}</span></div>
+    <a class="subject" href={meeting.eventUrl} data-event-id={meeting.id} onclick={handleRecord}>{meeting.subject}</a>
+    <a class="opportunity" href={meeting.opportunityUrl} data-event-id={meeting.id} data-kind="opportunity" onclick={handleRecord}><lightning-icon icon-name="utility:linked" size="x-small" class="" alternative-text=""></lightning-icon><span>{meeting.opportunity}</span></a>
+    <template lwc:if={meeting.rescheduling}><span class="rescheduling">Rescheduling</span></template>
+    <dl class="meeting-meta"><div><dt>Category</dt><dd>{meeting.category}</dd></div><div><dt>Topic</dt><dd>{meeting.topic}</dd></div></dl>
+    <details class="person-details"><summary><lightning-icon icon-name="utility:user" size="x-small" class="" alternative-text=""></lightning-icon><span><span class="person-label">Primary person</span>{meeting.person}</span></summary>
+        <p>Primary related person only. Full attendee list unavailable. <a href={meeting.eventUrl} data-event-id={meeting.id} onclick={handleRecord}>Open event</a></p>
+    </details>
+    <div class="meeting-action"><template lwc:if={meeting.impactUrl}><a class="impact" href={meeting.impactUrl} target="_blank" rel="noopener noreferrer" data-event-id={meeting.id} onclick={handleImpact}>Open Impact Assessment <lightning-icon icon-name="utility:new_window" size="x-small" class="" alternative-text=""></lightning-icon><span class="assistive">(opens in a new tab)</span></a></template>
+    <template lwc:else><button class="impact" disabled>Open Impact Assessment</button><span class="pending">Setup pending</span></template></div>
+</article></template></section></template>
+<template lwc:if={showAgenda}><template for:each={agendaDays} for:item="day"><section key={day.key} class="agenda-day"><div class="selected-day-heading"><h3>{day.label}</h3><span>{day.count}</span></div><template for:each={day.meetings} for:item="meeting">
+<article class="meeting" key={meeting.id}>
+    <div class="meeting-topline"><span class="meeting-time"><lightning-icon icon-name="utility:clock" size="x-small" class="" alternative-text=""></lightning-icon>{meeting.timeLabel}</span><span class={meeting.timingClass}>{meeting.timing}</span></div>
+    <a class="subject" href={meeting.eventUrl} data-event-id={meeting.id} onclick={handleRecord}>{meeting.subject}</a>
+    <a class="opportunity" href={meeting.opportunityUrl} data-event-id={meeting.id} data-kind="opportunity" onclick={handleRecord}><lightning-icon icon-name="utility:linked" size="x-small" class="" alternative-text=""></lightning-icon><span>{meeting.opportunity}</span></a>
+    <template lwc:if={meeting.rescheduling}><span class="rescheduling">Rescheduling</span></template>
+    <dl class="meeting-meta"><div><dt>Category</dt><dd>{meeting.category}</dd></div><div><dt>Topic</dt><dd>{meeting.topic}</dd></div></dl>
+    <details class="person-details"><summary><lightning-icon icon-name="utility:user" size="x-small" class="" alternative-text=""></lightning-icon><span><span class="person-label">Primary person</span>{meeting.person}</span></summary>
+        <p>Primary related person only. Full attendee list unavailable. <a href={meeting.eventUrl} data-event-id={meeting.id} onclick={handleRecord}>Open event</a></p>
+    </details>
+    <div class="meeting-action"><template lwc:if={meeting.impactUrl}><a class="impact" href={meeting.impactUrl} target="_blank" rel="noopener noreferrer" data-event-id={meeting.id} onclick={handleImpact}>Open Impact Assessment <lightning-icon icon-name="utility:new_window" size="x-small" class="" alternative-text=""></lightning-icon><span class="assistive">(opens in a new tab)</span></a></template>
+    <template lwc:else><button class="impact" disabled>Open Impact Assessment</button><span class="pending">Setup pending</span></template></div>
+</article></template></section></template><template lwc:if={isEmpty}><div class="empty-state"><lightning-icon icon-name="utility:event" size="x-small" alternative-text=""></lightning-icon><p>No upcoming or ongoing meetings for this selection.</p></div></template></template>
+<template lwc:if={showFooter}><footer class="agenda-footer"><span class="quiet">{statusText}</span><template lwc:if={hasMore}><button class="text-action" disabled={loading} onclick={loadMore}>Load more<lightning-icon icon-name="utility:arrowdown" size="x-small" alternative-text=""></lightning-icon></button></template><button class="text-action" onclick={handleViewAll}>View day’s meetings<lightning-icon icon-name="utility:arrowright" size="x-small" alternative-text=""></lightning-icon></button></footer></template>
+</div></template>

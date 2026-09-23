@@ -1,0 +1,1 @@
+export const NavigationMixin=(Base)=>class extends Base{[NavigationMixin.Navigate](value){window.__lastNavigation=value;}};NavigationMixin.Navigate=Symbol('navigate');

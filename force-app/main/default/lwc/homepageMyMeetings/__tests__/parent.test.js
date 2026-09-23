@@ -9,7 +9,7 @@ beforeEach(()=>{jest.useFakeTimers();jest.setSystemTime(new Date('2026-09-22T10:
 afterEach(()=>{document.body.replaceChildren();jest.clearAllMocks();jest.useRealTimers();});
 it('resolves both labels without checking create availability; mounts only the active tab',async()=>{
  const el=await mount();expect(el.shadowRoot.querySelector('c-homepage-todays-meeting')).not.toBeNull();expect(el.shadowRoot.querySelector('c-homepage-tomorrow-meetings')).toBeNull();
- const tab=el.shadowRoot.querySelector('lightning-tab[value="tomorrow"]') || [...el.shadowRoot.querySelectorAll('lightning-tab')].find(t=>t.value==='tomorrow');tab.dispatchEvent(new CustomEvent('active'));await flush();
+ el.shadowRoot.querySelector('[data-tab="tomorrow"]').click();await flush();
  expect(el.shadowRoot.querySelector('c-homepage-todays-meeting')).toBeNull();expect(el.shadowRoot.querySelector('c-homepage-tomorrow-meetings')).not.toBeNull();
 });
 it('unmounts before modal open, restores source and focus after failed opening',async()=>{
@@ -26,5 +26,5 @@ it('shows missing metadata as setup failure with no meeting query',async()=>{
 });
 it('clears inactive badges',async()=>{
  const el=await mount();el.shadowRoot.querySelector('c-homepage-todays-meeting').dispatchEvent(new CustomEvent('summarychange',{detail:{exactCountOrNull:8,completeness:'complete'}}));await flush();
- let tabs=[...el.shadowRoot.querySelectorAll('lightning-tab')];expect(tabs.find(t=>t.value==='today').label).toBe('Today (8)');tabs.find(t=>t.value==='calendar').dispatchEvent(new CustomEvent('active'));await flush();tabs=[...el.shadowRoot.querySelectorAll('lightning-tab')];expect(tabs.find(t=>t.value==='today').label).toBe('Today');
+ expect(el.shadowRoot.querySelector('[data-tab="today"] .tab-count').textContent).toBe('8');el.shadowRoot.querySelector('[data-tab="calendar"]').click();await flush();expect(el.shadowRoot.querySelector('[data-tab="today"] .tab-count')).toBeNull();
 });

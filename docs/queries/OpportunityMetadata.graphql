@@ -1,0 +1,6 @@
+# Syntax-checked offline; target schema NOT validated.
+query HomepageMeetingRecordTypes {
+        uiapi { objectInfos(apiNames: ["Opportunity"]) {
+            ApiName recordTypeInfos { name recordTypeId }
+        } }
+    }

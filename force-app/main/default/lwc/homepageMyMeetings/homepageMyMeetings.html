@@ -1,25 +1,12 @@
-<template>
-    <section class="surface" aria-label="My Meetings">
-        <header>
-            <h2 data-heading tabindex="-1">My Meetings</h2>
-            <div class="management">
-                <template lwc:if={dashboardUrl}><a href={dashboardUrl} target="_blank" rel="noopener noreferrer">Manage Meetings <span class="slds-assistive-text">(opens in a new tab)</span>↗</a></template>
-                <template lwc:else><button disabled>Manage Meetings</button><small>Dashboard link not configured</small></template>
-            </div>
-            <lightning-button-icon icon-name="utility:refresh" alternative-text="Refresh meetings" onclick={refreshMeetings}></lightning-button-icon>
-        </header>
-        <template lwc:if={setupError}><p role="status">{setupError}</p></template>
-        <template lwc:if={modalError}><p role="alert">{modalError}</p></template>
-        <lightning-tabset active-tab-value={activeTab}>
-            <lightning-tab label={todayLabel} value="today" onactive={handleTab}>
-                <template lwc:if={showToday}><c-homepage-todays-meeting scope-config={scopeConfig} display-zone={displayZone} max-visible-meetings={maxVisibleMeetings} integration-config={integrationConfig} onsummarychange={handleSummary} onviewall={expand} onexpand={expand} onrequestnavigation={navigate}></c-homepage-todays-meeting></template>
-            </lightning-tab>
-            <lightning-tab label={tomorrowLabel} value="tomorrow" onactive={handleTab}>
-                <template lwc:if={showTomorrow}><c-homepage-tomorrow-meetings scope-config={scopeConfig} display-zone={displayZone} max-visible-meetings={maxVisibleMeetings} integration-config={integrationConfig} onsummarychange={handleSummary} onviewall={expand} onexpand={expand} onrequestnavigation={navigate}></c-homepage-tomorrow-meetings></template>
-            </lightning-tab>
-            <lightning-tab label="Calendar" value="calendar" onactive={handleTab}>
-                <template lwc:if={showCalendar}><c-homepage-calendar-meetings scope-config={scopeConfig} display-zone={displayZone} selected-date={selectedDate} max-visible-meetings="1" integration-config={integrationConfig} ondatechange={handleDate} onviewall={expand} onexpand={expand} onrequestnavigation={navigate}></c-homepage-calendar-meetings></template>
-            </lightning-tab>
-        </lightning-tabset>
-    </section>
-</template>
+<template><section class="surface" aria-label="My Meetings">
+<header class="surface-header"><div class="title-group"><span class="calendar-icon"><lightning-icon icon-name="utility:event" size="small" class="" alternative-text=""></lightning-icon></span><h2 data-heading tabindex="-1">My Meetings</h2></div>
+<div class="header-actions"><template lwc:if={dashboardUrl}><a class="manage-link" href={dashboardUrl} target="_blank" rel="noopener noreferrer">Manage Meetings<lightning-icon icon-name="utility:new_window" size="x-small" class="" alternative-text=""></lightning-icon><span class="assistive">(opens in a new tab)</span></a></template><template lwc:else><button class="manage-link" disabled title="Dashboard link not configured">Manage Meetings</button></template>
+<button class="icon-button" title="Refresh meetings" aria-label="Refresh meetings" onclick={refreshMeetings}><lightning-icon icon-name="utility:refresh" size="x-small" class="" alternative-text=""></lightning-icon></button></div></header>
+<template lwc:if={setupError}><div class="state-message" role="status">{setupError}<template lwc:if={setupDetails}><details class="error-details"><summary>Technical details</summary><pre>{setupDetails}</pre></details></template></div></template>
+<template lwc:if={modalError}><div role="alert" class="state-message">{modalError}<details class="error-details"><summary>Technical details</summary><pre>{modalDetails}</pre></details></div></template>
+<div class="tabs" role="tablist" aria-label="Meeting views"><template for:each={tabs} for:item="tab"><button key={tab.value} id={tab.id} data-tab={tab.value} role="tab" class={tab.className} aria-selected={tab.selected} aria-controls="meetings-panel" tabindex={tab.tabIndex} onclick={handleTab} onkeydown={handleTabKey}>{tab.label}<template lwc:if={tab.showCount}><span class="tab-count">{tab.count}</span></template></button></template></div>
+<div id="meetings-panel" class="panel" role="tabpanel" aria-labelledby={activeTabId}>
+<template lwc:if={showToday}><c-homepage-todays-meeting scope-config={scopeConfig} display-zone={displayZone} max-visible-meetings={maxVisibleMeetings} integration-config={integrationConfig} onsummarychange={handleSummary} onviewall={expand} onrequestnavigation={navigate}></c-homepage-todays-meeting></template>
+<template lwc:if={showTomorrow}><c-homepage-tomorrow-meetings scope-config={scopeConfig} display-zone={displayZone} max-visible-meetings={maxVisibleMeetings} integration-config={integrationConfig} onsummarychange={handleSummary} onviewall={expand} onrequestnavigation={navigate}></c-homepage-tomorrow-meetings></template>
+<template lwc:if={showCalendar}><c-homepage-calendar-meetings scope-config={scopeConfig} display-zone={displayZone} selected-date={selectedDate} max-visible-meetings="1" integration-config={integrationConfig} ondatechange={handleDate} onviewall={expand} onexpand={expand} onrequestnavigation={navigate}></c-homepage-calendar-meetings></template>
+</div></section></template>
